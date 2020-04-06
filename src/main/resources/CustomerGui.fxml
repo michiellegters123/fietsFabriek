@@ -14,7 +14,7 @@
    <children>
       <AnchorPane layoutX="24.0" layoutY="390.0" prefHeight="136.0" prefWidth="600.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0">
          <children>
-            <Button layoutX="14.0" layoutY="14.0" mnemonicParsing="false" text="Bestel" AnchorPane.bottomAnchor="10.0" AnchorPane.rightAnchor="10.0">
+            <Button fx:id="orderButton" layoutX="14.0" layoutY="14.0" mnemonicParsing="false" text="Bestel" AnchorPane.bottomAnchor="10.0" AnchorPane.rightAnchor="10.0">
                <padding>
                   <Insets bottom="10.0" left="20.0" right="20.0" top="10.0" />
                </padding>
@@ -22,8 +22,10 @@
                   <Font size="14.0" />
                </font>
             </Button>
-            <ListView prefHeight="200.0" prefWidth="200.0" AnchorPane.bottomAnchor="10.0" AnchorPane.leftAnchor="10.0" AnchorPane.topAnchor="10.0" />
-            <Button fx:id="addOrder" mnemonicParsing="false" text="Voeg toe" AnchorPane.rightAnchor="10.0" />
+            <ListView fx:id="orderList" prefHeight="200.0" prefWidth="200.0" AnchorPane.bottomAnchor="10.0" AnchorPane.leftAnchor="10.0" AnchorPane.topAnchor="10.0" />
+            <Button fx:id="addOrder" mnemonicParsing="false" text="Voeg toe" AnchorPane.leftAnchor="250.0" AnchorPane.topAnchor="10.0" />
+            <Button fx:id="removeButton" layoutX="10.0" layoutY="10.0" mnemonicParsing="false" text="Verwijder" AnchorPane.leftAnchor="250.0" AnchorPane.topAnchor="40.0" />
+            <Button fx:id="clearButton" layoutX="20.0" layoutY="20.0" mnemonicParsing="false" text="Wis  alles" AnchorPane.leftAnchor="250.0" AnchorPane.topAnchor="70.0" />
          </children>
       </AnchorPane>
       <AnchorPane prefHeight="200.0" prefWidth="200.0" AnchorPane.leftAnchor="10.0" AnchorPane.rightAnchor="10.0" AnchorPane.topAnchor="10.0">
@@ -33,11 +35,12 @@
                   <Image url="werkplaats-fiets.png" />
                </image>
             </ImageView>
+            <ComboBox fx:id="brands" layoutX="10.0" layoutY="14.0" prefHeight="25.0" prefWidth="109.0" promptText="Merk" AnchorPane.leftAnchor="10.0" AnchorPane.topAnchor="14.0" />
             <ComboBox fx:id="saddleType" layoutX="64.0" layoutY="57.0" prefHeight="25.0" prefWidth="109.0" promptText="Zadel Type" visibleRowCount="2" />
             <ComboBox fx:id="bikeType" layoutX="303.0" layoutY="14.0" prefHeight="25.0" prefWidth="109.0" promptText="Type fiets" AnchorPane.leftAnchor="303.0" AnchorPane.topAnchor="14.0" />
             <ComboBox fx:id="frameType" layoutX="283.0" layoutY="182.0" prefHeight="25.0" prefWidth="109.0" promptText="Type frame" AnchorPane.leftAnchor="283.0" AnchorPane.topAnchor="182.0" />
-            <TextField layoutX="283.0" layoutY="149.0" promptText="Frame maat (cm)" />
-            <TextField layoutX="517.0" layoutY="137.0" promptText="Bandmaat (inch)" />
+            <TextField fx:id="frameSize" layoutX="283.0" layoutY="149.0" promptText="Frame maat (cm)" />
+            <TextField fx:id="wheelSize" layoutX="517.0" layoutY="137.0" promptText="Bandmaat (inch)" />
          </children>
          <opaqueInsets>
             <Insets />
