@@ -2,10 +2,15 @@ package CustomerApp;
 
 import Core.Order;
 import Core.bike.*;
+import Core.mappers.BikeTypeMapper;
+import Core.mappers.FrameTypeMapper;
+import Core.mappers.SaddleTypeMapper;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
+
+import java.sql.*;
 
 public class MainController
 {
@@ -24,12 +29,18 @@ public class MainController
 	@FXML
 	private TextField frameSize, wheelSize;
 
-	private ObservableList<Brand> brandList = FXCollections.observableArrayList(new Brand("test"), new Brand("test2"));
+	Connection conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/fietsfabriek", "root", "");
+
+	private ObservableList<Brand> brandList = FXCollections.observableArrayList();
 	private ObservableList<Bike> bikeOrderList = FXCollections.observableArrayList();
 
 	private Order currentOrder = new Order();
 
-	public void initialize()
+	public MainController() throws SQLException
+	{
+	}
+
+	public void initialize() throws SQLException
 	{
 		bikeType.setItems(FXCollections.observableArrayList(BikeType.Man, BikeType.Woman));
 		frameType.setItems(FXCollections.observableArrayList(FrameType.TypeA, FrameType.TypeB, FrameType.TypeC));
@@ -47,7 +58,7 @@ public class MainController
 
 		orderButton.setOnAction(event ->
 		{
-			clearAll();
+			orderBike();
 		});
 
 		clearButton.setOnAction(event ->
@@ -59,7 +70,7 @@ public class MainController
 		{
 			Bike bike = orderList.getSelectionModel().getSelectedItem();
 
-			if(bike == null)
+			if (bike == null)
 				return;
 
 			removeBikeFromOrder(bike);
@@ -95,8 +106,67 @@ public class MainController
 			{
 				new Alert(Alert.AlertType.ERROR, ex.getMessage()).showAndWait();
 			}
-
 		});
+
+		loadBrands();
+	}
+
+	private void loadBrands() throws SQLException
+	{
+		Statement stmt = conn.createStatement();
+		ResultSet rs = stmt.executeQuery("select * from brands");
+
+		while(rs.next())
+		{
+			Brand brand = new Brand(rs.getString("name"));
+			brand.setId(rs.getInt("brand_id"));
+
+			brandList.add(brand);
+		}
+
+		stmt.close();
+		rs.close();
+	}
+
+	private void orderBike()
+	{
+		try
+		{
+			Statement stmt = conn.createStatement();
+
+			stmt.executeUpdate("INSERT INTO orders(order_date, date_completed) VALUES(CURRENT_TIMESTAMP(), NULL)", Statement.RETURN_GENERATED_KEYS);
+			ResultSet rs = stmt.getGeneratedKeys();
+			rs.next();
+			int orderId = rs.getInt(1);
+			rs.close();
+
+			for(Bike bike : currentOrder.getBikes())
+			{
+
+				BikeTypeMapper bikeTypeMapper = new BikeTypeMapper();
+				FrameTypeMapper frameTypeMapper = new FrameTypeMapper();
+				SaddleTypeMapper saddleTypeMapper = new SaddleTypeMapper();
+
+				stmt.executeUpdate("INSERT INTO bikes(order_id, brand_id, bike_type, saddle_type, frame_type, frame_size, wheel_size)" +
+						String.format("VALUES(%d, %d, '%s', '%s', '%s', %d, %d)",
+								orderId,
+								bike.getBrand().getId(),
+								bikeTypeMapper.map(bike.getBikeType()),
+								saddleTypeMapper.map(bike.getSaddleType()),
+								frameTypeMapper.map(bike.getFrame().getFrameType()),
+								bike.getFrame().getSize(),
+								bike.getFrame().getWheelSize()
+						));
+			}
+
+			stmt.close();
+			clearAll();
+		}
+		catch (SQLException e)
+		{
+			e.printStackTrace();
+		}
+
 	}
 
 	private void addBikeToOrder(Bike bike)
@@ -113,7 +183,7 @@ public class MainController
 
 	private void previewBike(Bike bike)
 	{
-		if(bike == null)
+		if (bike == null)
 			return;
 
 		brands.getSelectionModel().select(bike.getBrand());
