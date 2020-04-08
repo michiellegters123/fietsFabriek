@@ -15,4 +15,19 @@ public class FrameTypeMapper
 
 		throw new IllegalArgumentException("Unknown frame type");
 	}
+
+	public String map(FrameType type)
+	{
+		switch (type)
+		{
+			case TypeB:
+				return "Type-B";
+			case TypeA:
+				return "Type-A";
+			case TypeC:
+				return "Type-C";
+		}
+
+		throw new IllegalArgumentException("Unknown frame type");
+	}
 }

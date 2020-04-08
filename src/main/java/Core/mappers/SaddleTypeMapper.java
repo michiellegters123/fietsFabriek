@@ -13,4 +13,17 @@ public class SaddleTypeMapper
 
 		throw new IllegalArgumentException("Unknown saddle type");
 	}
+
+	public String map(SaddleType type)
+	{
+		switch (type)
+		{
+			case Woman:
+				return "Woman";
+			case Man:
+				return "Man";
+		}
+
+		throw new IllegalArgumentException("Unknown saddle type");
+	}
 }
