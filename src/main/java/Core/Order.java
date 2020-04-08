@@ -12,4 +12,9 @@ public class Order
 	{
 		return bikes;
 	}
+
+	public void addBike(Bike bike)
+	{
+		bikes.add(bike);
+	}
 }
