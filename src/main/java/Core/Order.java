@@ -6,7 +6,8 @@ import java.util.ArrayList;
 
 public class Order
 {
-	private ArrayList<Bike> bikes = new ArrayList<Bike>();
+	private int id;
+	private ArrayList<Bike> bikes = new ArrayList<>();
 
 	public ArrayList<Bike> getBikes()
 	{
@@ -16,5 +17,15 @@ public class Order
 	public void addBike(Bike bike)
 	{
 		bikes.add(bike);
+	}
+
+	public int getId()
+	{
+		return id;
+	}
+
+	public void setId(int id)
+	{
+		this.id = id;
 	}
 }

@@ -2,6 +2,7 @@ package Core.bike;
 
 public class Bike
 {
+	private int id;
 	private Frame frame;
 	private BikeType bikeType;
 	private Brand brand;
@@ -43,5 +44,15 @@ public class Bike
 	public void setSaddleType(SaddleType saddleType)
 	{
 		this.saddleType = saddleType;
+	}
+
+	public int getId()
+	{
+		return id;
+	}
+
+	public void setId(int id)
+	{
+		this.id = id;
 	}
 }
