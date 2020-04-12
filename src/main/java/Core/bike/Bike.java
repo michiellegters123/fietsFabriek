@@ -4,9 +4,22 @@ public class Bike
 {
 	private int id;
 	private Frame frame;
-	private BikeType bikeType;
+	private int BrandId;
+
+
+
 	private Brand brand;
+	private BikeType bikeType;
 	private SaddleType saddleType;
+
+
+
+	public Bike(Frame frame, BikeType bikeType, SaddleType saddleType)
+	{
+		this.frame = frame;
+		this.bikeType = bikeType;
+		this.saddleType = saddleType;
+	}
 
 	public Bike(Frame frame, BikeType bikeType, Brand brand, SaddleType saddleType)
 	{
@@ -31,14 +44,29 @@ public class Bike
 		this.bikeType = bikeType;
 	}
 
+	public SaddleType getSaddleType()
+	{
+		return saddleType;
+	}
+
+	public void addBrandId(int id)
+	{
+		this.BrandId = id;
+	}
+
+	public int getBrandId()
+	{
+		return BrandId;
+	}
+
 	public Brand getBrand()
 	{
 		return brand;
 	}
 
-	public SaddleType getSaddleType()
+	public void setBrand(Brand brand)
 	{
-		return saddleType;
+		this.brand = brand;
 	}
 
 	public void setSaddleType(SaddleType saddleType)

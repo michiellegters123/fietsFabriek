@@ -2,6 +2,7 @@ package FactoryApp;
 import Core.Order;
 import Core.OrderQueue;
 import Core.bike.*;
+import com.mysql.cj.protocol.Resultset;
 import com.mysql.cj.x.protobuf.MysqlxCrud;
 import com.sun.prism.MediaFrame;
 import javafx.fxml.FXML;
@@ -15,7 +16,9 @@ import javafx.collections.ObservableList;
 import java.sql.*;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Date;
+import java.util.Calendar;
+
+import static javax.swing.JOptionPane.showMessageDialog;
 
 public class MainController
 {
@@ -26,6 +29,7 @@ public class MainController
 	private ListView<Order> finished;
 	private ObservableList<Order> finishedObservable = FXCollections.observableArrayList();
 
+	private ArrayList<Brand> selectedBrands = new ArrayList<>();
 
 	@FXML
 	private Button btnTake;
@@ -48,185 +52,197 @@ public class MainController
 	@FXML
 	private Label saddleType;
 
+	private Order selectedOrder = new Order();
 
-
-	private int counter, totalBikes;
-	private Order selectedOrder;
 	private Connection conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/fietsfabriek", "root", "");
-	Frame frame;
-	BikeType eBikeType;
-	SaddleType eSaddleType;
-	Order getOrder = new Order();
-	int brandId;
+	private ArrayList<Bike> bikes = new ArrayList<>();
+	private ArrayList<Integer> orderId = new ArrayList<>();
+	private Bike bike;
+	private int counter = 0;
+	Statement stmt = conn.createStatement();
+
 
 	public MainController() throws SQLException
 	{
+
 	}
 
 	public void initialize() throws SQLException
 	{
-		Statement stmt = conn.createStatement();
-		ResultSet rsOrder = stmt.executeQuery("select * from orders");
-
-		ArrayList<Integer> orderids = new ArrayList<>();
-		ArrayList<Order> allOrders = new ArrayList<>();
-
-		while(rsOrder.next())
-		{
-			if(rsOrder.getDate("date_completed") == null)
-			{
-				int orderId = rsOrder.getInt("order_id");
-				getOrder.setId(orderId);
-				orderids.add(orderId);
-			}
-		}
-
-		int length = orderids.size();
-		for (int i = 0; i < length; i++)
-		{
-			ResultSet rsBike = stmt.executeQuery("select * from bikes WHERE order_id = '" + orderids.get(i) + "'");
-			while (rsBike.next())
-			{
-				brandId = rsBike.getInt("brand_id");
-				System.out.println(brandId);
-				String frameType = rsBike.getString("frame_type");
-				FrameType EframeType;
-				switch (frameType)
-				{
-					case "TypeA":
-						EframeType = FrameType.TypeA;
-						break;
-					case "TypeB":
-						EframeType = FrameType.TypeB;
-						break;
-					case "TypeC":
-						EframeType = FrameType.TypeC;
-						break;
-					default:
-						EframeType = FrameType.TypeA;
-				}
-				frame = new Frame(rsBike.getInt("frame_size"), rsBike.getInt("wheel_size"), EframeType);
-				String biketype = rsBike.getString("bike_type");
-
-				switch (biketype)
-				{
-					case "Man":
-						eBikeType = BikeType.Man;
-						break;
-					case "Woman":
-						eBikeType = BikeType.Woman;
-						break;
-					default:
-						eBikeType = BikeType.Man;
-						break;
-				}
-
-				String saddleType = rsBike.getString("bike_type");
-				switch (saddleType)
-				{
-					case "Man":
-						eSaddleType = SaddleType.Man;
-						break;
-					case "Woman":
-						eSaddleType = SaddleType.Woman;
-						break;
-					default:
-						eSaddleType = SaddleType.Man;
-						break;
-				}
-
-			}
-
-			System.out.println(brandId);
-			ResultSet rsBrand = stmt.executeQuery("select * from brands WHERE brand_id ='"+ brandId +"'");
-				while (rsBrand.next())
-				{
-					Brand brand = new Brand(rsBrand.getString("name"));
-					Bike bike = new Bike(frame, eBikeType, brand, eSaddleType);
-					getOrder.addBike(bike);
-					orderObservable.add(getOrder);
-					orderList.setItems(orderObservable);
-					orderList.setCellFactory(x -> createAmountCell());
-					getOrder.setId(orderids.get(i)-1);
-					getOrder = new Order();
-				}
-		}
-
-		//orderObservable.add(getOrder);
-
-
+		orderList.setItems(orderObservable);
 		finished.setItems(finishedObservable);
-		finished.setCellFactory(x -> createAmountCell());
+		orderList.setCellFactory(param -> createAmountCell());
+		finished.setCellFactory(param -> createAmountCell());
+		loadOrders();
 		btnFinish.setDisable(true);
-
+		btnNext.setDisable(true);
 		btnTake.setOnAction(event ->
 		{
-			getBike(counter);
-			btnTake.setDisable(true);
-			if(selectedOrder.getBikes().size() == 1)
-			{
-				btnNext.setDisable(true);
-			}
-			else
-			{
-				btnNext.setDisable(false);
-			}
-		});
+			counter = 1;
+			lblCurrent.setText(Integer.toString(counter));
+			selectedOrder = orderList.getSelectionModel().getSelectedItem();
 
-		btnNext.setOnAction(event -> {
-			if(counter < totalBikes)
-			{
-				counter++;
-				lblCurrent.setText(Integer.toString(counter+1));
-				getBike(counter);
-			}
-			else
-			{
-				System.out.println("Send to finished");
-			}
-		});
-		btnFinish.setOnAction(event ->
-		{
-				finishedObservable.add(selectedOrder);
-				btnFinish.setDisable(true);
-				btnTake.setDisable(false);
-				counter = 0;
-				lblCurrent.setText("1");
+			int bikeCount = selectedOrder.getBikes().size();
+			lblTotaal.setText(Integer.toString(bikeCount));
+
 			try
 			{
-				java.sql.Date date = new java.sql.Date(new java.util.Date().getTime());
-				System.out.println(selectedOrder.getId());
-				stmt.executeUpdate("UPDATE orders SET date_completed = '"+ date+"' WHERE order_id = '"+selectedOrder.getId()+"'");
+				//Integer.parseInt(lblCurrent.getText())
+				fillLabels(0);
+				if(bikeCount != 1)
+				{
+					btnTake.setDisable(true);
+					btnNext.setDisable(false);
+				}
+				else
+				{
+					btnTake.setDisable(true);
+					btnFinish.setDisable(false);
+				}
+
 			}
 			catch (SQLException e)
 			{
 				e.printStackTrace();
 			}
-			orderObservable.remove(selectedOrder);
+		});
+
+		btnNext.setOnAction(event ->
+		{
+			try
+			{
+				fillLabels(Integer.parseInt(lblCurrent.getText()));
+				int counter = Integer.parseInt(lblCurrent.getText());
+				counter++;
+				lblCurrent.setText(Integer.toString(counter));
+				if(counter == selectedOrder.getBikes().size())
+				{
+					btnNext.setDisable(true);
+					btnFinish.setDisable(false);
+				}
+			}
+			catch (SQLException e)
+			{
+				e.printStackTrace();
+			}
+		});
+
+		btnFinish.setOnAction(event ->
+		{
+			int orderid = selectedOrder.getId();
+
+			try
+			{
+				Calendar cal = Calendar.getInstance();
+				Date date = new Date(cal.getTime().getTime());
+				stmt.executeUpdate("Update orders SET date_completed='"+ date +"' WHERE order_id = '"+ orderid+"'");
+
+				finishedObservable.add(selectedOrder);
+				orderObservable.remove(selectedOrder);
+
+				showMessageDialog(null, "De fiets is afgerond!");
+			}
+			catch (SQLException e)
+			{
+				e.printStackTrace();
+			}
 
 		});
 
 	}
 
-	private void getBike(int index)
+	public void fillLabels(int count) throws SQLException
 	{
-		selectedOrder = orderList.getSelectionModel().getSelectedItem();
-		totalBikes = selectedOrder.getBikes().size();
+		frameMaat.setText( Integer.toString(selectedOrder.getBikes().get(count).getFrame().getSize()));
+		frameId.setText(selectedOrder.getBikes().get(count).getFrame().getFrameType().toString());
+		bikeType.setText(selectedOrder.getBikes().get(count).getBikeType().toString());
 
-		lblTotaal.setText(Integer.toString(totalBikes));
-
-		if(counter == totalBikes-1)
+		ResultSet brandResult = stmt.executeQuery("select * from brands");
+		while(brandResult.next())
 		{
-			btnNext.setDisable(true);
-			btnFinish.setDisable(false);
+			if (selectedOrder.getBikes().get(count).getBrandId() == brandResult.getInt("brand_id"))
+			{
+				brand.setText(brandResult.getString("name"));
+			}
+		}
+		saddleType.setText(selectedOrder.getBikes().get(count).getSaddleType().toString());
 		}
 
-		int size = selectedOrder.getBikes().get(index).getFrame().getSize();
-		frameMaat.setText(Integer.toString(size));
-		frameId.setText(selectedOrder.getBikes().get(counter).getFrame().getFrameType().toString());
-		bikeType.setText(selectedOrder.getBikes().get(counter).getBikeType().toString());
-		brand.setText(selectedOrder.getBikes().get(counter).getBrand().getName());
-		saddleType.setText(selectedOrder.getBikes().get(counter).getSaddleType().toString());
+	public void loadOrders() throws SQLException
+	{
+		Order order = new Order();
+
+		Statement stmt = conn.createStatement();
+		ResultSet orderResult = stmt.executeQuery("select * from orders");
+		while (orderResult.next())
+		{
+			order.setId(orderResult.getInt("order_id"));
+			orderId.add(orderResult.getInt("order_id"));
+			if(orderResult.getDate("date_completed") == null)
+			{
+				orderObservable.add(order);
+			}
+			else
+			{
+				finishedObservable.add(order);
+			}
+			order = new Order();
+		}
+
+		ResultSet bikeResult = stmt.executeQuery("select * from bikes");
+		while(bikeResult.next())
+		{
+			FrameType frameType;
+			BikeType bikeType;
+			SaddleType saddleType;
+
+			switch (bikeResult.getString("frame_type"))
+			{
+				case "Type-A":
+					frameType = FrameType.TypeA;
+					break;
+				case "Type-B":
+					frameType = FrameType.TypeB;
+					break;
+				default:
+					frameType = FrameType.TypeC;
+					break;
+			}
+
+			Frame frame = new Frame(bikeResult.getInt("frame_size"), bikeResult.getInt("wheel_size"), frameType);
+
+			switch (bikeResult.getString("saddle_type"))
+			{
+				case "Man":
+					saddleType = SaddleType.Man;
+					break;
+				default:
+					saddleType = SaddleType.Woman;
+					break;
+			}
+
+			switch (bikeResult.getString("bike_type"))
+			{
+				case "Man":
+					bikeType = BikeType.Man;
+					break;
+				default:
+					bikeType = BikeType.Woman;
+					break;
+
+			}
+			bike = new Bike(frame, bikeType, saddleType);
+			bike.addBrandId(bikeResult.getInt("brand_id"));
+			bike.setId(bikeResult.getInt("order_id"));
+			bikes.add(bike);
+			for (int i = 0; i <orderObservable.size(); i++)
+			{
+				if(bike.getId() == orderObservable.get(i).getId())
+				{
+					orderObservable.get(i).addBike(bike);
+				}
+			}
+		}
 	}
 
 	private ListCell<Order> createAmountCell()
@@ -242,8 +258,8 @@ public class MainController
 					setText(null);
 					return;
 				}
-
-				setText("Order id: " + order.getId());
+				int id = order.getId();
+				setText("Order id: " + id);
 			}
 		};
 	}

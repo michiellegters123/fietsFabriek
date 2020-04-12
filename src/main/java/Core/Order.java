@@ -1,6 +1,7 @@
 package Core;
 
 import Core.bike.Bike;
+import Core.bike.Brand;
 
 import java.util.ArrayList;
 
@@ -18,6 +19,7 @@ public class Order
 	{
 		bikes.add(bike);
 	}
+
 
 	public int getId()
 	{
